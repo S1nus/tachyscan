@@ -14,9 +14,16 @@ ZAKURA_RPC_URL=http://127.0.0.1:8232 \
   cargo run --release
 ```
 
-Open <http://127.0.0.1:4141>. Tachyscan prefers the node's authoritative accumulator and retained Tachygram summary when `gettachyoninfo` is available. It also maintains `.tachyscan/index.json` from canonical verbose blocks for the historical footprint chart and as a fallback for nodes without PR #983. Recent transactions are usable while that backfill runs.
+Open <http://127.0.0.1:4141>. Tachyscan prefers the node's authoritative accumulator when `gettachyoninfo` is available. It also maintains `.tachyscan/index.json` from canonical verbose blocks as a fallback for nodes without PR #983. Recent transactions are usable while that backfill runs.
 
-Click a transaction (or its linked Tachygram brick) to open `/tx/<full-64-character-txid>`.
+The navigation bar links **Explorer** (`/`), **Faucet** (`/faucet`), and
+**Tutorial** (`/tutorial`). Faucet and Tutorial are placeholder pages for upcoming
+features and can be opened even while the node is unavailable. The explorer keeps
+the transaction type key above its stream; block and transaction detail pages
+remain under Explorer. Forward `/faucet` and `/tutorial` to Tachyscan as well,
+or configure an `index.html` fallback if serving `dist/` separately.
+
+Click a transaction to open `/tx/<full-64-character-txid>`.
 These URLs can be copied, bookmarked, opened in a new tab, or refreshed: transaction
 details are fetched from Zakura by ID even when the block is no longer on the live
 stream's current page. Browser Back/Forward navigates between views. A reverse
@@ -55,5 +62,3 @@ Vite serves the UI at <http://127.0.0.1:5173> and proxies `/api` to the backend.
 | `TACHYSCAN_DATA_DIR` | `.tachyscan` | Persistent accumulator index |
 | `TACHYSCAN_EPOCH_LENGTH` | `4096` | Override only for a Tachyon build using `test-epoch-size` |
 | `RUST_LOG` | `tachyscan_server=info` | Backend logging filter |
-
-The displayed footprint is the logical 32-byte payload size of the currently retained Tachygrams, rather than RocksDB's engine-dependent on-disk allocation.

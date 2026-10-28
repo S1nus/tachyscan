@@ -64,6 +64,55 @@ async function click(path: string) {
   await act(async () => { link(path).click(); });
 }
 
+describe('site navigation', () => {
+  it('moves between all three pages and restores Explorer for detail routes', async () => {
+    await mount(<App />);
+    const current = () => host.querySelector('nav[aria-label="Main navigation"] [aria-current="page"]')?.textContent;
+    expect(current()).toBe('Explorer');
+    expect(host.querySelector('[aria-label="Transaction type key"]')).not.toBeNull();
+    expect(host.querySelector('.tachygram-vault, .chart-frame')).toBeNull();
+
+    await click('/faucet');
+    expect(window.location.pathname).toBe('/faucet');
+    expect(current()).toBe('Faucet');
+    expect(host.textContent).toContain('The faucet is not available yet.');
+    await click('/tutorial');
+    expect(current()).toBe('Tutorial');
+    expect(document.title).toBe('Tutorial · Tachyscan');
+
+    // Back/Forward must restore the page and the active navigation item together.
+    await act(async () => {
+      window.history.replaceState(null, '', '/faucet');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    expect(current()).toBe('Faucet');
+    await click('/');
+    await click(`/block/${hash}`);
+    expect(current()).toBe('Explorer');
+    await vi.waitFor(() => expect(host.querySelector(`a[href="/tx/${txid}"]`)).not.toBeNull());
+    await click(`/tx/${txid}`);
+    expect(current()).toBe('Explorer');
+  });
+
+  it.each(['/faucet', '/faucet/', '/tutorial', '/tutorial/'])('opens %s without waiting for RPC', async (path) => {
+    window.history.replaceState(null, '', path);
+    fetchMock.mockRejectedValue(new Error('Node offline'));
+    await mount(<App />);
+    expect(host.textContent).toContain('COMING SOON');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(host.querySelector('nav[aria-label="Main navigation"] [aria-current="page"]')?.getAttribute('href')).toBe(path.replace(/\/$/, ''));
+  });
+
+  it('keeps navigation available when the explorer connection fails', async () => {
+    fetchMock.mockRejectedValue(new Error('Node offline'));
+    await mount(<App />);
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('Node offline');
+    await click('/tutorial');
+    expect(host.textContent).toContain('The tutorial is on its way.');
+    expect(host.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
 describe('block pages', () => {
   it('links block headers and the tip, then navigates from a block to its transactions', async () => {
     await mount(<App />);
