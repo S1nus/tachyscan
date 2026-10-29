@@ -18,7 +18,9 @@ Open <http://127.0.0.1:4141>. Tachyscan prefers the node's authoritative accumul
 
 The navigation bar links **Explorer** (`/`), **Faucet** (`/faucet`), and
 **Tutorial** (`/tutorial`). Faucet connects to the separate `tachyon-faucet`
-service; Tutorial remains a placeholder. Both pages can open independently of
+service; Tutorial links to the Tachyon guide in the
+[zcash-devtool README](https://github.com/S1nus/zcash-devtool/tree/c/tachyon-zakura#readme).
+Both pages can open independently of
 the explorer's node connection. The explorer keeps
 the transaction type key above its stream; block and transaction detail pages
 remain under Explorer. Forward `/faucet` and `/tutorial` to Tachyscan as well,
