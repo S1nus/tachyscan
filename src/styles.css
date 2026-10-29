@@ -59,12 +59,12 @@ h1 span { color: #d96c00; } h1 i { font-size: .25em; vertical-align: top; margin
 .legend > div { display: flex; flex-wrap: wrap; gap: 9px 20px; }
 .legend span { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 10px; }
 .legend b { font-size: 16px; }
-.coming-soon { min-height: 480px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: clamp(28px, 6vw, 80px); position: relative; overflow: hidden; }
-.coming-soon .section-kicker { color: var(--teal); }
-.coming-soon h2 { margin: 4px 0 18px; color: var(--orange); font-size: clamp(40px, 6vw, 72px); letter-spacing: -.06em; font-weight: 400; }
+.tutorial-page { min-height: 480px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: clamp(28px, 6vw, 80px); position: relative; overflow: hidden; }
+.tutorial-page .section-kicker { color: var(--teal); }
+.tutorial-page h2 { margin: 4px 0 18px; color: var(--orange); font-size: clamp(40px, 6vw, 72px); letter-spacing: -.06em; font-weight: 400; }
 .page-description { max-width: 36ch; font-size: clamp(16px, 2vw, 22px); line-height: 1.6; margin: 0 0 16px; }
 .page-note { max-width: 52ch; color: var(--muted); font-size: 12px; line-height: 1.8; margin: 0; }
-.coming-soon .back-button { margin: 28px 0 0; }
+.tutorial-page .back-button { margin: 28px 0 0; }
 .page-mark { position: absolute; right: 8%; font-size: clamp(120px, 22vw, 300px); color: var(--teal); opacity: .08; pointer-events: none; }
 .transactions-panel { min-height: 790px; border: 2px solid var(--gold); display: flex; flex-direction: column; overflow: hidden; }
 .transactions-head { padding: 22px 25px 20px; display: flex; justify-content: space-between; align-items: center; gap: 18px; border-bottom: 1px solid var(--line); }.transactions-head h2 { margin: 0; font-size: 23px; font-weight: 450; color: #d6a820; }.transactions-head h2 span { color: var(--orange); }.stream-controls { display: flex; align-items: center; gap: 12px; }.network-pill { border: 1px solid var(--teal-dark); color: var(--teal); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 8px 11px; white-space: nowrap; }.network-pill i, .live-dot { display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 10px var(--teal); }

@@ -137,7 +137,7 @@ export function App() {
         {section === 'faucet' ? (
           <FaucetPage onNavigate={navigate} />
         ) : section === 'tutorial' ? (
-          <TutorialPage onNavigate={navigate} />
+          <TutorialPage />
         ) : (
           <>
             <PoolLegend />
@@ -203,22 +203,22 @@ function Stat({ label, value, title }: { label: string; value: string; title?: s
   return <div class="stat"><span>{label}</span><strong title={title}>{value}</strong></div>;
 }
 
-function TutorialPage({ onNavigate }: {
-  onNavigate: (path: string) => void;
-}) {
+function TutorialPage() {
   return (
-    <section class="panel coming-soon" aria-labelledby="page-heading">
+    <section class="panel tutorial-page" aria-labelledby="page-heading">
       <span class="page-mark" aria-hidden="true">✦</span>
-      <p class="section-kicker">COMING SOON</p>
+      <p class="section-kicker">TACHYON ALPHA TESTNET</p>
       <h2 id="page-heading">Tutorial</h2>
       <p class="page-description">
-        Your guide to wallets, transactions, and exploring Tachyon.
+        Create a wallet. Try Tachyon.
       </p>
       <p class="page-note">
-        The tutorial is on its way.
-        {' '}In the meantime, explore the network.
+        Follow the guide in the zcash-devtool README to set up your wallet,
+        receive test funds, and send Tachyon payments.
       </p>
-      <ExplorerLink class="back-button" href="/" onNavigate={onNavigate}>Explore transactions →</ExplorerLink>
+      <a class="back-button" href="https://github.com/S1nus/zcash-devtool/tree/c/tachyon-zakura#readme" target="_blank" rel="noopener noreferrer">
+        Read the guide on GitHub ↗
+      </a>
     </section>
   );
 }

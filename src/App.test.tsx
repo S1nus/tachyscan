@@ -103,7 +103,7 @@ describe('site navigation', () => {
     window.history.replaceState(null, '', path);
     fetchMock.mockRejectedValue(new Error('Node offline'));
     await mount(<App />);
-    expect(host.textContent).toContain(path.startsWith('/faucet') ? 'GLOBAL COOLDOWN' : 'COMING SOON');
+    expect(host.textContent).toContain(path.startsWith('/faucet') ? 'GLOBAL COOLDOWN' : 'TACHYON ALPHA TESTNET');
     expect(fetchMock.mock.calls.some(([url]) => url.startsWith('/api/dashboard'))).toBe(false);
     expect(host.querySelector('nav[aria-label="Main navigation"] [aria-current="page"]')?.getAttribute('href')).toBe(path.replace(/\/$/, ''));
   });
@@ -113,7 +113,7 @@ describe('site navigation', () => {
     await mount(<App />);
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('Node offline');
     await click('/tutorial');
-    expect(host.textContent).toContain('The tutorial is on its way.');
+    expect(link('https://github.com/S1nus/zcash-devtool/tree/c/tachyon-zakura#readme').textContent).toContain('Read the guide on GitHub');
     expect(host.querySelector('[role="alert"]')).toBeNull();
   });
 });
