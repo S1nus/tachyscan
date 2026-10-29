@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Dashboard, ExplorerBlock, Transaction, TransactionSelection } from './types';
 import { isTransactionId, transactionPath } from './transaction-route';
 import { blockPath, useExplorerRoute } from './explorer-route';
-import type { SitePage } from './explorer-route';
 import { ExplorerLink } from './ExplorerLink';
 import { BlockPage } from './BlockPage';
 import { TransactionRow, TransactionSummary } from './TransactionRow';
 import { JsonViewer } from './JsonViewer';
+import { FaucetPage } from './FaucetPage';
 import { POOL_TYPES, durationUntil, formatBytes, shortHash, transactionPools } from './lib';
 
 const PAGE_SIZE = 8;
@@ -134,8 +134,10 @@ export function App() {
         ))}
       </nav>
       <main class="page-content">
-        {section !== 'explorer' ? (
-          <ComingSoonPage page={section} onNavigate={navigate} />
+        {section === 'faucet' ? (
+          <FaucetPage onNavigate={navigate} />
+        ) : section === 'tutorial' ? (
+          <TutorialPage onNavigate={navigate} />
         ) : (
           <>
             <PoolLegend />
@@ -201,22 +203,19 @@ function Stat({ label, value, title }: { label: string; value: string; title?: s
   return <div class="stat"><span>{label}</span><strong title={title}>{value}</strong></div>;
 }
 
-function ComingSoonPage({ page, onNavigate }: {
-  page: Exclude<SitePage, 'explorer'>;
+function TutorialPage({ onNavigate }: {
   onNavigate: (path: string) => void;
 }) {
   return (
     <section class="panel coming-soon" aria-labelledby="page-heading">
-      <span class="page-mark" aria-hidden="true">{page === 'faucet' ? '◈' : '✦'}</span>
+      <span class="page-mark" aria-hidden="true">✦</span>
       <p class="section-kicker">COMING SOON</p>
-      <h2 id="page-heading">{page === 'faucet' ? 'Faucet' : 'Tutorial'}</h2>
+      <h2 id="page-heading">Tutorial</h2>
       <p class="page-description">
-        {page === 'faucet'
-          ? 'Testnet funds for your next Tachyon transaction.'
-          : 'Your guide to wallets, transactions, and exploring Tachyon.'}
+        Your guide to wallets, transactions, and exploring Tachyon.
       </p>
       <p class="page-note">
-        {page === 'faucet' ? 'The faucet is not available yet.' : 'The tutorial is on its way.'}
+        The tutorial is on its way.
         {' '}In the meantime, explore the network.
       </p>
       <ExplorerLink class="back-button" href="/" onNavigate={onNavigate}>Explore transactions →</ExplorerLink>

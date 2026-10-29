@@ -1,0 +1,37 @@
+.faucet-page { display: grid; grid-template-columns: 1fr 1fr; min-height: 580px; }
+.faucet-intro { padding: clamp(24px, 4vw, 64px); background: radial-gradient(ellipse at bottom left, rgba(74,158,160,.09), transparent 65%); }
+.faucet-intro > .section-kicker { color: var(--teal); }
+.faucet-intro h2 { font-size: clamp(30px, 3.6vw, 58px); font-weight: 400; line-height: 1.2; letter-spacing: -.06em; color: var(--orange); margin: 20px 0; }
+.faucet-intro h2 span { font-size: .8em; }
+.faucet-intro > p { max-width: 38ch; line-height: 1.8; font-size: 13px; color: var(--muted); }
+.faucet-availability { margin-top: 42px; padding-top: 24px; border-top: 1px solid var(--line); }
+.faucet-availability > span { display: block; }
+.faucet-availability strong { color: var(--teal); font-size: clamp(32px, 4vw, 54px); font-weight: 400; font-variant-numeric: tabular-nums; }
+.faucet-availability p, .faucet-claim p { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.faucet-form-panel { min-width: 0; padding: clamp(24px, 4vw, 64px); border-left: 1px solid var(--line); }
+.faucet-form-panel label { display: block; color: var(--gold); font-size: 14px; }
+.faucet-hint { color: var(--muted); font-size: 11px; line-height: 1.8; margin: 12px 0 18px; }
+.faucet-form-panel textarea { width: 100%; resize: vertical; min-height: 100px; font: inherit; font-size: 12px; line-height: 1.7; color: var(--teal); background: #030604; border: 1px solid var(--teal-dark); border-radius: 0; padding: 15px; overflow-wrap: anywhere; }
+.faucet-form-panel textarea::placeholder { color: #63736c; }
+.faucet-form-panel textarea:disabled { opacity: .65; }
+.faucet-form-panel textarea:focus-visible, .faucet-form-panel button:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+.faucet-primary, .faucet-secondary { padding: 14px 18px; font-size: 12px; cursor: pointer; }
+.faucet-primary { width: 100%; border: 1px solid var(--gold); background: var(--gold); color: var(--ink); margin-top: 18px; }
+.faucet-primary:hover:not(:disabled) { background: #f4cb43; }
+.faucet-primary:disabled { background: transparent; color: var(--muted); border-color: var(--line); cursor: not-allowed; }
+.faucet-secondary { border: 1px solid var(--teal-dark); color: var(--teal); background: transparent; }
+.faucet-secondary:hover { border-color: var(--teal); }
+.faucet-how { margin-top: 34px; display: grid; gap: 18px; color: var(--muted); font-size: 11px; }
+.faucet-caption { font-size: 10px !important; color: var(--muted); line-height: 1.8; }
+.faucet-error { color: #e77c58; font-size: 12px; line-height: 1.8; }
+.faucet-claim { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.faucet-claim h3 { color: var(--teal); font-size: 18px; font-weight: 400; }
+.faucet-tx-link { display: block; color: var(--teal); font-size: 11px; text-decoration: none; line-height: 1.8; }
+.faucet-tx-link span { display: block; overflow-wrap: anywhere; color: var(--muted); }
+.faucet-tx-link:hover { text-decoration: underline; }
+.faucet-claim pre { overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--teal-dark); background: #030604; color: var(--teal); padding: 16px; font-size: 10px; line-height: 1.8; }
+@media (max-width: 800px) {
+  .faucet-page { grid-template-columns: 1fr; }
+  .faucet-form-panel { border-left: 0; border-top: 1px solid var(--line); }
+  .faucet-availability { margin-top: 24px; }
+}

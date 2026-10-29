@@ -17,8 +17,9 @@ ZAKURA_RPC_URL=http://127.0.0.1:8232 \
 Open <http://127.0.0.1:4141>. Tachyscan prefers the node's authoritative accumulator when `gettachyoninfo` is available. It also maintains `.tachyscan/index.json` from canonical verbose blocks as a fallback for nodes without PR #983. Recent transactions are usable while that backfill runs.
 
 The navigation bar links **Explorer** (`/`), **Faucet** (`/faucet`), and
-**Tutorial** (`/tutorial`). Faucet and Tutorial are placeholder pages for upcoming
-features and can be opened even while the node is unavailable. The explorer keeps
+**Tutorial** (`/tutorial`). Faucet connects to the separate `tachyon-faucet`
+service; Tutorial remains a placeholder. Both pages can open independently of
+the explorer's node connection. The explorer keeps
 the transaction type key above its stream; block and transaction detail pages
 remain under Explorer. Forward `/faucet` and `/tutorial` to Tachyscan as well,
 or configure an `index.html` fallback if serving `dist/` separately.
@@ -50,6 +51,21 @@ npm run dev
 ```
 
 Vite serves the UI at <http://127.0.0.1:5173> and proxies `/api` to the backend.
+
+## Faucet
+
+Run the Python service from the sibling `tachyon-faucet` repository on
+`127.0.0.1:4142`. Its README includes wallet setup, systemd, and nginx examples.
+In production, proxy `/api/faucet/` to that service while keeping other `/api/`
+requests on Tachyscan's Rust backend. Vite already has both routes configured;
+add `http://localhost:5173` to the faucet's `allowed_origins` for development.
+
+The page accepts a Tachyon payment key, displays the server's global cooldown,
+and downloads the recipient's note JSON. Amount and cooldown are configured on
+the service, not in the frontend. Defaults are 0.01 testnet ZEC and five minutes.
+The same-tab claim survives refreshes via a private session-storage token;
+download the receipt before closing the tab. No wallet keys or RPC credentials
+belong in the frontend. Without the service, claiming stays disabled.
 
 ## Configuration
 

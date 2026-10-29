@@ -27,11 +27,16 @@ let host: HTMLDivElement;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  sessionStorage.clear();
   window.history.replaceState(null, '', '/');
   host = document.createElement('div');
   document.body.append(host);
   vi.stubGlobal('matchMedia', () => ({ matches: true }));
   fetchMock = vi.fn(async (url: string) => {
+    if (url === '/api/faucet/status') return { ok: true, json: async () => ({
+      amount_zat: 1000000, cooldown_seconds: 300, server_time_ms: Date.now(),
+      remaining_ms: 0, accepting: false, reason: 'syncing',
+    }) };
     if (url.startsWith('/api/dashboard')) return { ok: true, json: async () => dashboard };
     if (url.startsWith('/api/blocks/')) return { ok: true, json: async () => block };
     if (url.startsWith('/api/transactions/')) return {
@@ -75,7 +80,7 @@ describe('site navigation', () => {
     await click('/faucet');
     expect(window.location.pathname).toBe('/faucet');
     expect(current()).toBe('Faucet');
-    expect(host.textContent).toContain('The faucet is not available yet.');
+    expect(host.textContent).toContain('GLOBAL COOLDOWN');
     await click('/tutorial');
     expect(current()).toBe('Tutorial');
     expect(document.title).toBe('Tutorial · Tachyscan');
@@ -98,8 +103,8 @@ describe('site navigation', () => {
     window.history.replaceState(null, '', path);
     fetchMock.mockRejectedValue(new Error('Node offline'));
     await mount(<App />);
-    expect(host.textContent).toContain('COMING SOON');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(host.textContent).toContain(path.startsWith('/faucet') ? 'GLOBAL COOLDOWN' : 'COMING SOON');
+    expect(fetchMock.mock.calls.some(([url]) => url.startsWith('/api/dashboard'))).toBe(false);
     expect(host.querySelector('nav[aria-label="Main navigation"] [aria-current="page"]')?.getAttribute('href')).toBe(path.replace(/\/$/, ''));
   });
 
