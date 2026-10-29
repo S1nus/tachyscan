@@ -1,4 +1,4 @@
-import type { ExplorerBlock, Transaction, TransactionSelection } from './types';
+import type { Transaction } from './types';
 
 export const POOL_TYPES = [
   { key: 'ironwood', emoji: '🍎', label: 'Ironwood' },
@@ -31,33 +31,6 @@ export function transactionValueBalance(tx: Transaction): number | null {
   ].filter((value): value is number => typeof value === 'number');
 
   return values.length ? values.reduce((total, value) => total + value, 0) : null;
-}
-
-export function transactionForTachygram(
-  blocks: ExplorerBlock[],
-  tachygram: string,
-): TransactionSelection | null {
-  for (const block of blocks) {
-    const transactionIndex = block.transactions.findIndex((transaction) =>
-      transaction.tachyon?.stamp?.tachygrams?.includes(tachygram),
-    );
-    if (transactionIndex >= 0) {
-      return {
-        transaction: block.transactions[transactionIndex],
-        blockHeight: block.height,
-        coinbase: transactionIndex === 0,
-      };
-    }
-  }
-  return null;
-}
-
-export function tachygramGradient(index: number): string {
-  const start = [0xd4, 0xa0, 0x17];
-  const end = [0x4a, 0x9e, 0xa0];
-  const position = (index * 0.618_033_988_75) % 1;
-  const channel = (from: number, to: number) => Math.round(from + (to - from) * position);
-  return `rgb(${channel(start[0], end[0])} ${channel(start[1], end[1])} ${channel(start[2], end[2])})`;
 }
 
 export function formatZec(zatoshis: number | null): string {
@@ -96,16 +69,4 @@ export function durationUntil(date: string | number | null, now = Date.now()): s
   return [days && `${days}d`, (days || hours) && `${hours}h`, (days || hours || minutes) && `${minutes}m`, `${seconds}s`]
     .filter(Boolean)
     .join(' ');
-}
-
-export function pruningDate(
-  height: number,
-  activationHeight: number,
-  epochLength: number,
-  blockSeconds: number,
-): string | null {
-  if (height < activationHeight || blockSeconds <= 0) return null;
-  const poolHeight = height - activationHeight;
-  const blocksRemaining = epochLength - (poolHeight % epochLength);
-  return new Date(Date.now() + blocksRemaining * blockSeconds * 1000).toISOString();
 }

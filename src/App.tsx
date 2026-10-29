@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Dashboard, ExplorerBlock, Transaction, TransactionSelection } from './types';
 import { isTransactionId, transactionPath } from './transaction-route';
 import { blockPath, useExplorerRoute } from './explorer-route';
@@ -6,19 +6,15 @@ import { ExplorerLink } from './ExplorerLink';
 import { BlockPage } from './BlockPage';
 import { TransactionRow, TransactionSummary } from './TransactionRow';
 import { JsonViewer } from './JsonViewer';
-import {
-  POOL_TYPES,
-  durationUntil,
-  formatBytes,
-  pruningDate,
-  shortHash,
-  tachygramGradient,
-  transactionForTachygram,
-  transactionPools,
-} from './lib';
+import { FaucetPage } from './FaucetPage';
+import { POOL_TYPES, durationUntil, formatBytes, shortHash, transactionPools } from './lib';
 
 const PAGE_SIZE = 8;
-const TACHYGRAM_STAGGER_MS = 65;
+const SITE_PAGES = [
+  { id: 'explorer', label: 'Explorer', href: '/' },
+  { id: 'faucet', label: 'Faucet', href: '/faucet' },
+  { id: 'tutorial', label: 'Tutorial', href: '/tutorial' },
+] as const;
 
 function useClock() {
   const [now, setNow] = useState(Date.now());
@@ -42,13 +38,17 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selection, setSelection] = useState<TransactionSelection | null>(null);
-  const { txid, blockId, navigate } = useExplorerRoute();
+  const { txid, blockId, section, navigate } = useExplorerRoute();
   const [transactionError, setTransactionError] = useState<string | null>(null);
   const [animateStream, setAnimateStream] = useState(
     () => localStorage.getItem('tachyscan-stream-motion') !== 'off',
   );
   const [arrivalHeight, setArrivalHeight] = useState<number | null>(null);
   const previousHeight = useRef<number | null>(null);
+
+  useEffect(() => {
+    document.title = `${SITE_PAGES.find((item) => item.id === section)!.label} · Tachyscan`;
+  }, [section]);
 
   useEffect(() => {
     setSelection(null);
@@ -75,16 +75,19 @@ export function App() {
   }, [txid]);
 
   useEffect(() => {
+    if (section !== 'explorer') return;
     const controller = new AbortController();
+    setLoading(true);
     const refresh = async () => {
       try {
         const next = await loadDashboard(page, controller.signal);
+        if (controller.signal.aborted) return;
         setDashboard(next);
         setError(null);
       } catch (cause) {
-        if ((cause as Error).name !== 'AbortError') setError((cause as Error).message);
+        if (!controller.signal.aborted) setError((cause as Error).message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     void refresh();
@@ -93,7 +96,7 @@ export function App() {
       controller.abort();
       if (timer) window.clearInterval(timer);
     };
-  }, [page]);
+  }, [page, section]);
 
   useEffect(() => {
     if (!dashboard) return;
@@ -107,13 +110,6 @@ export function App() {
     previousHeight.current = dashboard.height;
   }, [dashboard?.height, animateStream]);
 
-  if (!dashboard && loading) return <LoadingScreen />;
-  if (!dashboard) return <ConnectionError message={error ?? 'Unable to reach Tachyscan'} />;
-
-  const selectTachygram = (tachygram: string) => {
-    const matchingTransaction = transactionForTachygram(dashboard.blocks, tachygram);
-    if (matchingTransaction) navigate(transactionPath(matchingTransaction.transaction.txid));
-  };
   const toggleStreamAnimation = () => {
     setAnimateStream((enabled) => {
       const next = !enabled;
@@ -123,48 +119,72 @@ export function App() {
   };
 
   return (
-    <main class="shell">
-      <Header dashboard={dashboard} onNavigate={navigate} />
-      {error && <div class="stale-banner">Live refresh paused · {error}</div>}
-      <div class="dashboard-grid">
-        <TachyonPanel dashboard={dashboard} onSelectTachygram={selectTachygram} />
-        {blockId !== null ? (
-          <BlockPage key={blockId} id={blockId} network={dashboard.network} onNavigate={navigate} />
-        ) : (
-          <TransactionPanel
-            dashboard={dashboard}
-            onPage={setPage}
-            selection={selection}
-            txid={txid}
-            transactionError={transactionError}
-            onSelect={(selected) => navigate(transactionPath(selected.transaction.txid))}
-            onBack={() => navigate('/')}
+    <div class="shell">
+      <Header dashboard={section === 'explorer' ? dashboard : null} onNavigate={navigate} />
+      <nav class="site-navigation" aria-label="Main navigation">
+        {SITE_PAGES.map((item) => (
+          <ExplorerLink
+            key={item.id}
+            href={item.href}
             onNavigate={navigate}
-            animateStream={animateStream}
-            arrivalHeight={arrivalHeight}
-            onToggleAnimation={toggleStreamAnimation}
-          />
+            aria-current={section === item.id ? 'page' : undefined}
+          >
+            {item.label}
+          </ExplorerLink>
+        ))}
+      </nav>
+      <main class="page-content">
+        {section === 'faucet' ? (
+          <FaucetPage onNavigate={navigate} />
+        ) : section === 'tutorial' ? (
+          <TutorialPage onNavigate={navigate} />
+        ) : (
+          <>
+            <PoolLegend />
+            {error && dashboard && <div class="stale-banner" role="status">Live refresh paused · {error}</div>}
+            {!dashboard ? (
+              loading ? <LoadingScreen /> : <ConnectionError message={error ?? 'Unable to reach Tachyscan'} />
+            ) : blockId !== null ? (
+              <BlockPage key={blockId} id={blockId} network={dashboard.network} onNavigate={navigate} />
+            ) : (
+              <TransactionPanel
+                dashboard={dashboard}
+                onPage={setPage}
+                selection={selection}
+                txid={txid}
+                transactionError={transactionError}
+                onSelect={(selected) => navigate(transactionPath(selected.transaction.txid))}
+                onBack={() => navigate('/')}
+                onNavigate={navigate}
+                animateStream={animateStream}
+                arrivalHeight={arrivalHeight}
+                onToggleAnimation={toggleStreamAnimation}
+              />
+            )}
+          </>
         )}
-      </div>
+      </main>
       <footer>
         <span>Tachyscan</span>
-        <span class="footer-dot">◆</span>
-        <span>{dashboard.network}</span>
-        <span class={`live-dot ${dashboard.index.phase}`} />
-        <span>{dashboard.index.phase === 'ready' ? 'index caught up' : dashboard.index.phase}</span>
+        {section === 'explorer' && dashboard && <>
+          <span class="footer-dot">◆</span>
+          <span>{dashboard.network}</span>
+          <span class={`live-dot ${dashboard.index.phase}`} />
+          <span>{dashboard.index.phase === 'ready' ? 'index caught up' : dashboard.index.phase}</span>
+        </>}
       </footer>
-    </main>
+    </div>
   );
 }
 
-function Header({ dashboard, onNavigate }: { dashboard: Dashboard; onNavigate: (path: string) => void }) {
+function Header({ dashboard, onNavigate }: { dashboard: Dashboard | null; onNavigate: (path: string) => void }) {
   return (
     <header>
       <div>
         <p class="eyebrow">TACHYON NETWORK OBSERVATORY</p>
-        <h1>Tachy<span>scan</span><i>✦</i></h1>
+        <h1><ExplorerLink class="brand-link" href="/" onNavigate={onNavigate}>Tachy<span>scan</span><i aria-hidden="true">✦</i></ExplorerLink></h1>
       </div>
-      <div class="tip-stats">
+      {dashboard && <div class="tip-stats">
         <ExplorerLink class="tip-block-link" href={blockPath(dashboard.bestBlockHash)} onNavigate={onNavigate}>
           <Stat label="Block" value={dashboard.height.toLocaleString()} />
         </ExplorerLink>
@@ -174,7 +194,7 @@ function Header({ dashboard, onNavigate }: { dashboard: Dashboard; onNavigate: (
           value={dashboard.accumulator ? shortHash(dashboard.accumulator, 12, 8) : 'indexing…'}
           title={dashboard.accumulator ?? undefined}
         />
-      </div>
+      </div>}
     </header>
   );
 }
@@ -183,166 +203,31 @@ function Stat({ label, value, title }: { label: string; value: string; title?: s
   return <div class="stat"><span>{label}</span><strong title={title}>{value}</strong></div>;
 }
 
-function TachyonPanel({
-  dashboard,
-  onSelectTachygram,
-}: {
-  dashboard: Dashboard;
-  onSelectTachygram: (tachygram: string) => void;
+function TutorialPage({ onNavigate }: {
+  onNavigate: (path: string) => void;
 }) {
-  const now = useClock();
-  const brickLayout = useRef<HTMLDivElement>(null);
-  const previousBrickPositions = useRef(new Map<string, DOMRect>());
-  const visibleTachygrams = dashboard.tachygrams.slice(0, 42);
-  const brickSequence = visibleTachygrams.map((tachygram) => tachygram.value).join(':');
-
-  useLayoutEffect(() => {
-    const layout = brickLayout.current;
-    if (!layout) return;
-
-    const nextPositions = new Map<string, DOMRect>();
-    const hasPreviousLayout = previousBrickPositions.current.size > 0;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let arrivingBrickIndex = 0;
-    layout.querySelectorAll<HTMLElement>('[data-tachygram]').forEach((brick) => {
-      const tachygram = brick.dataset.tachygram;
-      if (!tachygram) return;
-
-      const nextPosition = brick.getBoundingClientRect();
-      nextPositions.set(tachygram, nextPosition);
-      const previousPosition = previousBrickPositions.current.get(tachygram);
-      if (reducedMotion) return;
-
-      brick.getAnimations().forEach((animation) => animation.cancel());
-      if (!previousPosition) {
-        if (!hasPreviousLayout) return;
-
-        brick.animate(
-          [
-            { opacity: 0, scale: 0.78, translate: '0 -10px' },
-            { opacity: 1, scale: 1, translate: '0 0' },
-          ],
-          {
-            duration: 260,
-            delay: arrivingBrickIndex * TACHYGRAM_STAGGER_MS,
-            easing: 'cubic-bezier(.18,.82,.3,1)',
-            fill: 'backwards',
-          },
-        );
-        arrivingBrickIndex += 1;
-        return;
-      }
-
-      const horizontalShift = previousPosition.left - nextPosition.left;
-      const verticalShift = previousPosition.top - nextPosition.top;
-      if (horizontalShift === 0 && verticalShift === 0) return;
-
-      brick.animate(
-        [
-          { translate: `${horizontalShift}px ${verticalShift}px` },
-          { translate: '0 0' },
-        ],
-        {
-          duration: 520,
-          easing: 'cubic-bezier(.2,.76,.25,1)',
-        },
-      );
-    });
-    previousBrickPositions.current = nextPositions;
-  }, [brickSequence]);
-
-  const pruneAt = useMemo(
-    () => pruningDate(dashboard.height, dashboard.activationHeight, dashboard.epochLength, dashboard.blockTargetSeconds),
-    [dashboard.height, dashboard.activationHeight, dashboard.epochLength, dashboard.blockTargetSeconds],
-  );
   return (
-    <aside class="tachyon-panel">
-      <section class="panel tachygram-vault">
-        <div class="panel-label"><span>RETAINED TACHYGRAMS</span><b>{dashboard.retainedTachygramCount.toLocaleString()}</b></div>
-        <div class="brick-field" aria-label={`${dashboard.retainedTachygramCount} retained Tachygrams`}>
-          {visibleTachygrams.length ? (
-            <div class="brick-layout" ref={brickLayout}>
-              {visibleTachygrams.map((tachygram, index) => {
-                const selection = transactionForTachygram(dashboard.blocks, tachygram.value);
-                return (
-                  <button
-                    key={tachygram.value}
-                    data-tachygram={tachygram.value}
-                    class={`tachy-brick ${selection ? 'linked' : ''}`}
-                    style={{
-                      '--offset': `${(index % 3) * 8}px`,
-                      '--brick-color': tachygramGradient(index),
-                    }}
-                    title={`${tachygram.value}\nRevealed at block ${tachygram.revealedHeight}${selection ? '\nOpen transaction' : ''}`}
-                    onClick={() => {
-                      if (selection) onSelectTachygram(tachygram.value);
-                      else void navigator.clipboard?.writeText(tachygram.value);
-                    }}
-                  >
-                    {shortHash(tachygram.value, 8, 4)}
-                  </button>
-                );
-              })}
-            </div>
-          ) : <div class="empty-vault">Waiting for proof stamps <span>💫</span></div>}
-        </div>
-      </section>
-      <div class="prune-line">
-        <span>Pruning in</span>
-        <strong>{durationUntil(pruneAt, now)}</strong>
-      </div>
-      <section class="footprint-section">
-        <p class="section-kicker">TACHYGRAM PAYLOAD FOOTPRINT</p>
-        <h2>{formatBytes(dashboard.footprintBytes)}</h2>
-        <FootprintChart dashboard={dashboard} />
-      </section>
-      <PoolLegend />
-    </aside>
-  );
-}
-
-function FootprintChart({ dashboard }: { dashboard: Dashboard }) {
-  const points = dashboard.footprintHistory;
-  const width = 620;
-  const height = 270;
-  const inset = 22;
-  const minHeight = points[0]?.height ?? dashboard.activationHeight;
-  const maxHeight = points.at(-1)?.height ?? dashboard.height;
-  const maxBytes = Math.max(32, ...points.map((point) => point.bytes));
-  const x = (block: number) => inset + ((block - minHeight) / Math.max(1, maxHeight - minHeight)) * (width - inset * 2);
-  const y = (bytes: number) => height - inset - (bytes / maxBytes) * (height - inset * 2);
-  const path = points.map((point, index) => `${index ? 'L' : 'M'} ${x(point.height)} ${y(point.bytes)}`).join(' ');
-  const firstBoundary = dashboard.activationHeight + Math.ceil((minHeight - dashboard.activationHeight) / dashboard.epochLength) * dashboard.epochLength;
-  const boundaries: number[] = [];
-  for (let boundary = firstBoundary; boundary <= maxHeight; boundary += dashboard.epochLength) boundaries.push(boundary);
-
-  return (
-    <div class="chart-frame">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Tachygram payload footprint over block height">
-        <line class="axis" x1={inset} x2={inset} y1={inset} y2={height - inset} />
-        <line class="axis" x1={inset} x2={width - inset} y1={height - inset} y2={height - inset} />
-        {boundaries.map((boundary) => <line class="epoch-line" x1={x(boundary)} x2={x(boundary)} y1={inset} y2={height - inset} />)}
-        {path && <path class="footprint-line" d={path} />}
-        {points.filter((_, index) => index % Math.max(1, Math.floor(points.length / 22)) === 0).map((point) => (
-          <circle class="footprint-point" cx={x(point.height)} cy={y(point.bytes)} r="3.6" />
-        ))}
-      </svg>
-      <div class="chart-caption"><span>BLOCK {minHeight.toLocaleString()}</span><span>epoch boundary ┊</span><span>{maxHeight.toLocaleString()}</span></div>
-      {dashboard.index.phase === 'syncing' && (
-        <div class="index-progress">
-          <span style={{ width: `${Math.max(2, ((dashboard.index.scannedHeight ?? dashboard.activationHeight) - dashboard.activationHeight) / Math.max(1, dashboard.index.targetHeight - dashboard.activationHeight) * 100)}%` }} />
-          <b>Reconstructing accumulator · {dashboard.index.scannedHeight?.toLocaleString() ?? 'starting'} / {dashboard.index.targetHeight.toLocaleString()}</b>
-        </div>
-      )}
-    </div>
+    <section class="panel coming-soon" aria-labelledby="page-heading">
+      <span class="page-mark" aria-hidden="true">✦</span>
+      <p class="section-kicker">COMING SOON</p>
+      <h2 id="page-heading">Tutorial</h2>
+      <p class="page-description">
+        Your guide to wallets, transactions, and exploring Tachyon.
+      </p>
+      <p class="page-note">
+        The tutorial is on its way.
+        {' '}In the meantime, explore the network.
+      </p>
+      <ExplorerLink class="back-button" href="/" onNavigate={onNavigate}>Explore transactions →</ExplorerLink>
+    </section>
   );
 }
 
 function PoolLegend() {
   return (
-    <section class="legend">
+    <section class="legend" aria-label="Transaction type key">
       <p class="section-kicker">TRANSACTION TYPE KEY</p>
-      <div>{POOL_TYPES.map((pool) => <span><b>{pool.emoji}</b>{pool.label}</span>)}</div>
+      <div>{POOL_TYPES.map((pool) => <span key={pool.key}><b>{pool.emoji}</b>{pool.label}</span>)}</div>
     </section>
   );
 }
@@ -390,6 +275,7 @@ function TransactionPanel({
             <input
               type="checkbox"
               role="switch"
+              aria-label="Auto-scroll"
               checked={animateStream}
               onChange={onToggleAnimation}
             />
@@ -535,9 +421,9 @@ function Pagination({ page, pages, onPage }: { page: number; pages: number; onPa
 }
 
 function LoadingScreen() {
-  return <div class="full-screen"><div class="loader-orbit">✦</div><h1>Tachy<span>scan</span></h1><p>Finding the tip of spacetime…</p></div>;
+  return <div class="panel connection-state" role="status"><div class="loader-orbit" aria-hidden="true">✦</div><p>Finding the tip of spacetime…</p></div>;
 }
 
 function ConnectionError({ message }: { message: string }) {
-  return <div class="full-screen error-screen"><b>CONNECTION INTERRUPTED</b><h1>Tachy<span>scan</span></h1><p>{message}</p><button onClick={() => location.reload()}>Try again</button></div>;
+  return <div class="panel connection-state error-screen" role="alert"><b>CONNECTION INTERRUPTED</b><p>{message}</p><button onClick={() => location.reload()}>Try again</button></div>;
 }
