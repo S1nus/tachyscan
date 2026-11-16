@@ -192,3 +192,52 @@ describe('block pages', () => {
     expect(prevented).toBe(false);
   });
 });
+
+describe('busy blocks', () => {
+  const many = (count: number) => Array.from({ length: count }, (_, index) => ({
+    ...transaction,
+    txid: `${index.toString(16).padStart(2, '0')}`.repeat(32),
+  }));
+
+  function dashboardWith(count: number): Dashboard {
+    return { ...dashboard, blocks: [{ ...dashboard.blocks[0], transactions: many(count) }] };
+  }
+
+  it('collapses a block with more than five transactions into a stack and shows its count', async () => {
+    const stacked = dashboardWith(6);
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.startsWith('/api/dashboard')) return { ok: true, json: async () => stacked };
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    await mount(<App />);
+    expect(host.querySelectorAll('.tx-stack').length).toBe(1);
+    expect(host.querySelector('.tx-stack-count')?.textContent).toBe('6');
+    expect(host.querySelectorAll('.block-list .transaction-row').length).toBe(0);
+    expect(host.querySelector('.tx-stack-front')?.getAttribute('href')).toBe(`/block/${hash}`);
+  });
+
+  it('lists blocks with five or fewer transactions normally', async () => {
+    const listed = dashboardWith(5);
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.startsWith('/api/dashboard')) return { ok: true, json: async () => listed };
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    await mount(<App />);
+    expect(host.querySelector('.tx-stack')).toBeNull();
+    expect(host.querySelectorAll('.block-list .transaction-row').length).toBe(5);
+  });
+
+  it('shows every transaction on the block page', async () => {
+    window.history.replaceState(null, '', `/block/${hash}`);
+    const busy = { ...block, tx: many(6) };
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.startsWith('/api/blocks/')) return { ok: true, json: async () => busy };
+      if (url.startsWith('/api/dashboard')) return { ok: true, json: async () => dashboard };
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+    await mount(<App />);
+    await vi.waitFor(() => expect(host.textContent).toContain('BLOCK DETAIL'));
+    await vi.waitFor(() => expect(host.querySelectorAll('.transaction-row').length).toBe(6));
+    expect(host.querySelector('.tx-stack')).toBeNull();
+  });
+});

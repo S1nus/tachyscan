@@ -333,18 +333,37 @@ function BlockGroup({
         <span>{Math.max(1, tip - block.height + 1)} CONF</span>
         <span title={block.hash}>{shortHash(block.hash, 8, 6)}</span>
       </ExplorerLink>
-      {block.transactions.map((transaction, index) => (
-        <TransactionRow
-          key={transaction.txid}
-          transaction={transaction}
-          coinbase={index === 0}
-          onSelect={() => onSelect({
-            transaction,
-            blockHeight: block.height,
-            coinbase: index === 0,
-          })}
-        />
-      ))}
+      {block.transactions.length > 5 ? (
+        <div class="tx-stack">
+          <div class="tx-stack-deck">
+            <i class="tx-stack-layer layer-far" aria-hidden="true" />
+            <i class="tx-stack-layer layer-mid" aria-hidden="true" />
+            <ExplorerLink class="tx-stack-front" href={blockPath(block.hash)} onNavigate={onNavigate}>
+              <span class="tx-stack-title">TRANSACTIONS</span>
+              <span class="tx-stack-hint">View block →</span>
+            </ExplorerLink>
+          </div>
+          <span
+            class="tx-stack-count"
+            title={`${block.transactions.length} transactions in this block`}
+          >
+            {block.transactions.length}
+          </span>
+        </div>
+      ) : (
+        block.transactions.map((transaction, index) => (
+          <TransactionRow
+            key={transaction.txid}
+            transaction={transaction}
+            coinbase={index === 0}
+            onSelect={() => onSelect({
+              transaction,
+              blockHeight: block.height,
+              coinbase: index === 0,
+            })}
+          />
+        ))
+      )}
     </article>
   );
 }
